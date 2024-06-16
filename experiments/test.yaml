@@ -1,2 +1,3 @@
 virus:
   name: NEW
+  infect_radius: 2.0

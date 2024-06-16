@@ -3,16 +3,22 @@ import yaml
 
 __C = edict({
     'virus': edict(),
-    'people': edict(),
     'student': edict(),
+    'teacher': edict(),
+    'environment': edict(),
 })
 cfg = __C   # Consumers get this
 
 __C.virus.name = 'COVID-19'
-__C.virus.infection_radius = 0.3
-__C.virus.infection_rate = 0.8
+__C.virus.infect_radius = -1.0
 
-__C.student.num = 100
+__C.student.number = 6
+__C.student.move_matrix = [[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5]]
+
+__C.teacher.number = 1
+__C.teacher.move_matrix = [[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5]]
+
+__C.environment.lab_number = 3
 
 
 
