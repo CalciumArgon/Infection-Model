@@ -10,6 +10,16 @@ from config import cfg_from_file
 
 
 
+# ===================================================================
+# About simulation
+def dist(stu1, stu2):
+    x1, y1 = stu1.experimental_position
+    x2, y2 = stu2.experimental_position
+    return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
+# ===================================================================
+
+
+
 
 # ===================================================================
 # About configurations

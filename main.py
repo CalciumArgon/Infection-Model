@@ -12,10 +12,10 @@ class Simulation():
         self.virus = Virus(cfg.virus.name, cfg.virus.infect_radius)
 
         # 时钟信息 -------------------------------------
-        self.clock = 0  # 按分钟计 ?
+        self.clock = 0  # 按分钟计, 但可以每次+60模拟小时
         # --------------------------------------------
 
-        # 记录所有实验室
+        # 记录所有人
         self.students = []
         self.teachers = []
         # self.labs = []
@@ -53,6 +53,27 @@ class Simulation():
                                               lab, 'O', cfg.teacher.move_matrix
                                         )
                                     )
+                
+    def action(self):
+        for s in self.students:
+            for other_s in self.students:
+                if other_s == s:  # 重载了 ==, 比较 identity_id
+                    continue    # 不考虑自己
+                if (s.current_area == other_s.current_area):
+                    # 在同一区域传染; 若在实验室还需小于传染半径
+                    if (s.current_area != 0) or (s.current_area == 0 and dist(s, other_s) <= self.virus.infect_radius):
+                        s.infect(other_s)
+
+        # 最后所有人移动
+        for s in self.students:
+            s.update()
+            s.move()
+        for t in self.teachers:
+            t.update()
+            t.move()
+        
+        self.clock += 60
+        return
 
     @staticmethod
     def day(self):
