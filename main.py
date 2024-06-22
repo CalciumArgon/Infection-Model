@@ -34,15 +34,16 @@ class Simulation():
                 # 添加实验室学生, 坐标随机, 全局标识号为: lab * stu_num + i
                 self.students.append(Student(
                                             lab * self.stu_num + i, 
-                                            lab, 'E', cfg.student.move_matrix,
+                                            lab, 'E', cfg.student.hidden2infect_day,
+                                            cfg.student.move_matrix,
                                             # 如果整点随机改为 np.random.randint
                                             lab_postion=(np.random.uniform(0,self.lab_size[0]), np.random.uniform(0, self.lab_size[1]))
                                         )
                                     )
             for i in range(cfg.student.w_number):
                 # 添加工作区学生, 工位号固定为其全局标识号: lab * stu_num + e_number + i
-                self.students.append(Student(lab * self.stu_num + cfg.student.e_number + i, 
-                                             lab, 'W', cfg.student.move_matrix
+                self.students.append(Student(lab * self.stu_num + cfg.student.e_number + i,
+                                             lab, 'W', cfg.student.hidden2infect_day, cfg.student.move_matrix
                                         )
                                     )
                 
@@ -50,29 +51,29 @@ class Simulation():
             for i in range(cfg.teacher.number):
                 # 老师初始都在 Office, 全局标识符: lab * cfg.teacher.number + i
                 self.teachers.append(Teacher(lab * cfg.teacher.number + i,
-                                              lab, 'O', cfg.teacher.move_matrix
+                                              lab, 'O', cfg.teacher.hidden2infect_day, cfg.teacher.move_matrix
                                         )
                                     )
                 
     def action(self):
-        for s in self.students:
-            for other_s in self.students:
-                if other_s == s:  # 重载了 ==, 比较 identity_id
+        for p in (self.students + self.teachers):
+            for other_p in self.students:
+                if other_p == p:  # 重载了 ==, 比较 identity_id
                     continue    # 不考虑自己
-                if (s.current_area == other_s.current_area):
-                    # 在同一区域传染; 若在实验室还需小于传染半径
-                    if (s.current_area != 0) or (s.current_area == 0 and dist(s, other_s) <= self.virus.infect_radius):
-                        s.infect(other_s)
+                if (p.current_area == other_p.current_area):
+                    # 在同一区域传染; 若在实验室还需小于传染半径; 若在工位认为1m间隔, 半径内传染
+                    if (p.current_area != 0) or (p.current_area == 0 and dist(p, other_p) <= self.virus.infect_radius):
+                        p.infect(other_p)
 
         # 最后所有人移动
         for s in self.students:
-            s.update()
-            s.move()
+            s.update(self.clock)
+            s.move(self.lab_size)
         for t in self.teachers:
-            t.update()
-            t.move()
+            t.update(self.clock)
+            t.move(self.lab_size)
         
-        self.clock += 60
+        self.clock += 10
         return
 
     @staticmethod
@@ -129,4 +130,8 @@ if __name__ == '__main__':
     _ = parse_args()
     print_easydict(cfg)
     simulation = Simulation(cfg)
-    print(simulation)
+    
+    for ii in range(20):
+        if ii % 5 == 0:
+            print(simulation)
+        simulation.action()

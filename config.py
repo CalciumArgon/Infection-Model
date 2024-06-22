@@ -6,6 +6,7 @@ __C = edict({
     'student': edict(),
     'teacher': edict(),
     'environment': edict(),
+    'event': edict(),
 })
 cfg = __C   # Consumers get this
 
@@ -15,23 +16,30 @@ __C.virus.infect_radius = 2.0   # 传染半径
 # -------------------------------------------------------------
 
 # 学生 -----------------------------------------------------
-__C.student.e_number = 6        # 在 experimental area 学生数量
-__C.student.w_number = 12       # 在 work area 学生数量
-__C.student.move_matrix = [[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5]]     # 学生移动矩阵
-__C.student.infect_day_range = (3, 7)   # 从 hidden 到 infected 天数范围
+__C.student.e_number = 10        # 在 experimental area 学生数量
+__C.student.w_number = 20        # 在 work area 学生数量
+__C.student.move_matrix = [[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2]]    # 学生移动矩阵
+__C.student.hidden2infect_day = (3, 7)   # 从 hidden 到 infected 天数范围
 # ---------------------------------------------------------
 
 
 # 教师 --------------------------------------------------------
 __C.teacher.number = 1        # 教师数量, 初始默认在 office
-__C.teacher.move_matrix = [[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5],[1,2,3,4,5]]     # 教师移动矩阵
-__C.teacher.infect_day_range = (3, 7)   # 从 hidden 到 infected 天数范围
+__C.teacher.move_matrix = [[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2]]    # 教师移动矩阵
+__C.teacher.hidden2infect_day = (3, 7)   # 从 hidden 到 infected 天数范围
 # ------------------------------------------------------------
+
 
 # 地图设置 -----------------------------------------------------
 __C.environment.lab_number = 3      # 实验室数量
 __C.environment.lab_length = 40.0     # 实验室尺寸--长
 __C.environment.lab_width = 20.0      # 实验室尺寸--宽
+# ------------------------------------------------------------
+
+
+# 事件设置 -----------------------------------------------------
+__C.event.meeting_rate = [0.01, 0.1, 0.4]   # 每个非会议周期 开会概率 (长度必须与实验室数量相同)
+__C.event.meeting_duration = [30, 60, 90]   # 开会
 # ------------------------------------------------------------
 
 

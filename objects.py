@@ -33,7 +33,7 @@ AREA = {
     'M': 4
 }
 
-def exposure_to_prop(a):
+def exposure_to_propagation(a):
     return a
 
 def probability(time):
@@ -41,7 +41,7 @@ def probability(time):
 
 
 class People():
-    def __init__(self, identity: str, identity_id: int, lab: int, area: str, move_matrix, lab_postion=None, addition=0, weakness=0):
+    def __init__(self, identity: str, identity_id: int, lab: int, area: str, hidden2infect_day, move_matrix, lab_postion=None, addition=0, weakness=0):
         assert area in ['E', 'W', 'T', 'O', 'M'], "Invalid area: {}".format(area)
         assert identity.lower() in ['student', 'teacher'], "Invalid identity: {}".format(identity)
 
@@ -51,16 +51,17 @@ class People():
         self.lab = lab
         self.move_matrix = move_matrix
 
-        # 传染别人相关
-        self.propagation_capacity = exposure_to_prop(self.exposure_time)
-        self.addition_capacity = addition   # 向别人额外的易传染性
-
         # 被传染相关
         self.exposure_time = 0
         self.weak_immune = weakness     # 被别人额外传染的弱免疫性
         self.infected_probability = probability(self.exposure_time)
         self.infect_state = 0   # 0: Normal, 1: Infected, 2: Hidden, 3: Vacation, 4: Recovered
         self.state_duration = 0 # Duration of current state
+        self.hidden2infect_day = np.random.randint(hidden2infect_day[0], hidden2infect_day[1])  # 在范围内随机的 hidden 天数
+
+        # 传染别人相关
+        self.propagation_capacity = exposure_to_propagation(self.exposure_time)
+        self.addition_capacity = addition   # 向别人额外的易传染性
 
         # 状态/位置信息
         self.current_area = AREA[area]  # 区域的首字母转换成数字
@@ -71,6 +72,7 @@ class People():
         self.history = {
             'trajectory': [],   # 记录行动轨迹
             'exposure': [],     #
+            'exposure_area': [] # 
         }
 
     def infect(self, other):
@@ -88,12 +90,12 @@ class People():
 
 
 class Student(People):
-    def __init__(self, identity_id: int, lab: int, area: str, move_matrix, lab_postion=None):
-        super().__init__('student', identity_id, lab, area, move_matrix, lab_postion)
+    def __init__(self, identity_id: int, lab: int, area: str, hidden2infect_day, move_matrix, lab_postion=None):
+        super().__init__('student', identity_id, lab, area, hidden2infect_day, move_matrix, lab_postion)
 
-    def update(self):
+    def update(self, clock):
         if self.infect_state == 0:
-            self.propagation_capacity = exposure_to_prop(self.exposure_time)
+            self.propagation_capacity = exposure_to_propagation(self.exposure_time)
             self.infected_probability = probability(self.exposure_time)
         elif self.infect_state == 1:
             raise NotImplementedError
@@ -104,29 +106,30 @@ class Student(People):
         elif self.infect_state == 4:
             raise NotImplementedError
 
-    def move(self):
+
+    def move(self, lab_size):
         # 根据自身感染产生特殊行为 (回家等)
         # 无
         
         # 根据移动矩阵的概率随机选择下一步
-        next_area = np.random.choice(5, 1, p=self.move_matrix[self.current_area])
+        next_area = np.random.choice(5, 1, p=self.move_matrix[self.current_area])[0]
         self.history['trajectory'].append(next_area)
         self.current_area = next_area
         if AREA_FULL_NAME[next_area] == 'experimental_areas':
             # 若整数点位, 改为 np.random.randint
-            self.experimental_position = (np.random.uniform(0, self.lab_size[0]), np.random.uniform(0, self.lab_size[1]))
+            self.experimental_position = (np.random.uniform(0, lab_size[0]), np.random.uniform(0, lab_size[1]))
         else:
             self.experimental_position = None
 
 
 class Teacher(People):
-    def __init__(self, identity_id: int, lab: int, area: str, move_matrix, lab_postion=None):
-        super().__init__('teacher', identity_id, lab, area, move_matrix, lab_postion)
+    def __init__(self, identity_id: int, lab: int, area: str, hidden2infect_day, move_matrix, lab_postion=None):
+        super().__init__('teacher', identity_id, lab, area, hidden2infect_day, move_matrix, lab_postion)
 
 
-    def update(self):
+    def update(self, day):
         if self.infect_state == 0:
-            self.propagation_capacity = exposure_to_prop(self.exposure_time)
+            self.propagation_capacity = exposure_to_propagation(self.exposure_time)
             self.infected_probability = probability(self.exposure_time)
         elif self.infect_state == 1:
             raise NotImplementedError
@@ -137,17 +140,17 @@ class Teacher(People):
         elif self.infect_state == 4:
             raise NotImplementedError
 
-    def move(self):
+    def move(self, lab_size):
         # 根据自身感染产生特殊行为 (回家等)
         # 无
 
         # 根据移动矩阵的概率随机选择下一步
-        next_area = np.random.choice(5, 1, p=self.move_matrix[self.current_area])
+        next_area = np.random.choice(5, 1, p=self.move_matrix[self.current_area])[0]
         self.history['trajectory'].append(next_area)
         self.current_area = next_area
         if AREA_FULL_NAME[next_area] == 'experimental_areas':
             # 若整数点位, 改为 np.random.randint
-            self.experimental_position = (np.random.uniform(0, self.lab_size[0]), np.random.uniform(0, self.lab_size[1]))
+            self.experimental_position = (np.random.uniform(0, lab_size[0]), np.random.uniform(0, lab_size[1]))
         else:
             self.experimental_position = None
 
