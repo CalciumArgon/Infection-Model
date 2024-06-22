@@ -1,3 +1,7 @@
 virus:
   name: NEW
   infect_radius: 2.0
+
+student:
+  e_number: 10
+  w_number: 20
