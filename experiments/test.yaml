@@ -1,3 +1,5 @@
+seed: 42
+
 virus:
   name: NEW
   infect_radius: 2.0

@@ -5,7 +5,6 @@ from objects import *
 from utils import *
 
 
-
 class Simulation():
     def __init__(self, cfg):
         self.config = cfg
@@ -143,11 +142,11 @@ class Simulation():
 
     @staticmethod
     def day(self):
-        return self.clock // (24 * 60)
+        return self.clock // (10 * 60)
     
     @staticmethod
     def hour(self):
-        return (self.clock // 60) % 24
+        return (self.clock // 60) % 10
     
     @staticmethod
     def posi_distribution(self):
@@ -174,12 +173,17 @@ class Simulation():
         print('[State]')
         print('{} days, {} hours'.format(self.day(self), self.hour(self)))
         print('Infected people number:')
+        does_all_recover = [False for _ in range(self.lab_num)]
         for lab in range(self.lab_num):
             infected_stu = len([s for s in self.students if s.lab == lab and s.infect_state == 1])
             infected_tea = len([t for t in self.teachers if t.lab == lab and t.infect_state == 1])
             print('  Lab {}: student: {} ({}%), teacher: {} ({}%)'.format(lab, infected_stu, round(100*infected_stu / self.stu_num, 2)
                                                                           , infected_tea, round(100*infected_tea / self.tea_num, 2))
             )
+            if infected_stu == 0 and infected_tea == 0:
+                does_all_recover[lab] = True
+        if all(does_all_recover):
+            assert False, 'All people in all labs are recovered!'
         print('People postions:')
         stu_dis, tea_dis = self.posi_distribution(self)
         print('(corresponding [E W T O M])')
@@ -189,14 +193,23 @@ class Simulation():
             print('    Teacher:', tea_dis[lab])
         print('==========================================')
         return ''
+    
+    
+    def infection_situation(self):
+        # 返回一些更具体的信息, 比如暴露时间分布, 状态分布
+        students_situation = []
 
 
 if __name__ == '__main__':
     _ = parse_args()
     print_easydict(cfg)
+    np.random.seed(cfg.seed)
+
     simulation = Simulation(cfg)
     
-    for ii in range(30):
-        if ii % 5 == 0:
+    for ii in range(3000):
+        if ii % 10 == 0:
+            print('Round:', ii)
             print(simulation)
+            
         simulation.action()

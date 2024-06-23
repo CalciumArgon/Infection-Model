@@ -7,6 +7,7 @@ __C = edict({
     'teacher': edict(),
     'environment': edict(),
     'event': edict(),
+    'seed': 3407
 })
 cfg = __C   # Consumers get this
 
