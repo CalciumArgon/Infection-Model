@@ -8,7 +8,8 @@ from utils import *
 class Simulation():
     def __init__(self, cfg):
         self.config = cfg
-        self.virus = Virus(cfg.virus.name, cfg.virus.infect_radius)
+        self.virus = Virus(cfg.virus.name, cfg.virus.infect_radius, cfg.virus.infect_intense_range)
+        self.avg_infect_capacity = 0.5 * (cfg.virus.infect_intense_range[0] + cfg.virus.infect_intense_range[1])
 
         # 时钟信息 -------------------------------------
         self.clock = 0  # 按分钟计, 但可以每次+60模拟小时
@@ -52,9 +53,10 @@ class Simulation():
                 # 添加实验室学生, 坐标随机, 全局标识号为: lab * stu_num + i
                 is_talktive = np.random.choice([cfg.student.talktive_addition, 0], p=[self.talktive_rate, 1-self.talktive_rate])
                 is_immune = np.random.choice([cfg.student.immune_defence, 0], p=[self.immune_rate, 1-self.immune_rate])
+                basic_capacity = np.random.randint(self.virus.infect_intense_range[0], self.virus.infect_intense_range[1]+1)
                 self.students.append(Student(
                                             lab * self.stu_num + i, 
-                                            lab, 'E',
+                                            lab, 'E', basic_capacity, self.avg_infect_capacity,
                                             cfg.student.hidden2infect_day, cfg.student.infect2recover_day, cfg.student.vacation2return_day,
                                             cfg.student.move_matrix,
                                             # 如果整点随机改为 np.random.randint
@@ -66,8 +68,9 @@ class Simulation():
                 # 添加工作区学生, 工位号固定为其全局标识号: lab * stu_num + e_number + i
                 is_talktive = np.random.choice([cfg.student.talktive_addition, 0], p=[self.talktive_rate, 1-self.talktive_rate])
                 is_immune = np.random.choice([cfg.student.immune_defence, 0], p=[self.immune_rate, 1-self.immune_rate])
+                basic_capacity = np.random.randint(self.virus.infect_intense_range[0], self.virus.infect_intense_range[1]+1)
                 self.students.append(Student(lab * self.stu_num + cfg.student.e_number + i,
-                                             lab, 'W',
+                                             lab, 'W', basic_capacity, self.avg_infect_capacity,
                                              cfg.student.hidden2infect_day, cfg.student.infect2recover_day, cfg.student.vacation2return_day,
                                              cfg.student.move_matrix,
                                              addition=is_talktive, immune=is_immune
@@ -79,8 +82,9 @@ class Simulation():
                 # 老师初始都在 Office, 全局标识符: 学生总数 + lab * cfg.teacher.number + i
                 is_talktive = np.random.choice([cfg.teacher.talktive_addition, 0], p=[self.tea_talktive_rate, 1-self.tea_talktive_rate])
                 is_immune = np.random.choice([cfg.teacher.immune_defence, 0], p=[self.tea_immune_rate, 1-self.tea_immune_rate])
+                basic_capacity = np.random.randint(self.virus.infect_intense_range[0], self.virus.infect_intense_range[1]+1)
                 self.teachers.append(Teacher(lab * cfg.teacher.number + i,
-                                              lab, 'O', 
+                                              lab, 'O', basic_capacity, self.avg_infect_capacity,
                                               cfg.teacher.hidden2infect_day, cfg.teacher.infect2recover_day, cfg.teacher.vacation2return_day,
                                               cfg.teacher.move_matrix,
                                               addition=is_talktive, immune=is_immune
@@ -118,7 +122,7 @@ class Simulation():
             if np.random.rand() < self.meeting_rate[lab]:   # 该实验室决定开会
                 this_lab_student = [s for s in self.students if s.lab == lab]
                 unlucky = np.random.choice(this_lab_student,
-                                           int(self.meeting_rate[lab] * self.stu_num), replace=False)
+                                           int(self.meeting_scale[lab] * self.stu_num), replace=False)
                 lucky = [x for x in self.students if x not in unlucky]
                 for s in unlucky:     # 学生按比例参会
                     s.update(self.clock)
@@ -128,7 +132,7 @@ class Simulation():
                     s.move(self.lab_size)
                 this_lab_teacher = [t for t in self.teachers if t.lab == lab]
                 unlucky_tea = np.random.choice(this_lab_teacher,
-                                               int(self.meeting_rate[lab] * self.tea_num), replace=False)
+                                               int(self.meeting_scale[lab] * self.tea_num), replace=False)
                 lucky_tea = [x for x in self.teachers if x not in unlucky_tea]
                 for t in unlucky_tea:     # 老师按比例参会
                     t.update(self.clock)

@@ -1,12 +1,13 @@
 import numpy as np
 
 class Virus():
-    def __init__(self, name, infect_radius):
+    def __init__(self, name, infect_radius, infect_intense_range):
         self.name = name
         self.infect_radius = infect_radius
+        self.infect_intense_range = infect_intense_range
     
     def __str__(self):
-        return f"Virus({self.name}, {self.infect_radius})"
+        return f"Virus({self.name}, R={self.infect_radius}), Basic Intense Range={self.infect_intense})"
 
     
 INFECTION_STATE_NAME = {
@@ -33,19 +34,19 @@ AREA = {
     'M': 4
 }
 
-def exposure_to_propagation(time):
-    return time
+# def exposure_to_propagation(time):
+#     return time
 
-def becomeHidden(time):
-    # TODO ================================
-    # 这个函数发展太陡峭, 概率集中在 0 或者 1附近
-    # =====================================
-    pro = 1 / (1 + np.exp(-time+60))
-    return np.random.choice([True, False], p=[pro, 1-pro])
+
+def create_becomeHidden(av):
+    def becomeHidden(time):
+        pro = 1 / (1 + np.exp(6 - (time/av)))
+        return np.random.choice([True, False], p=[pro, 1-pro])
+    return becomeHidden
 
 
 class People():
-    def __init__(self, identity: str, identity_id: int, lab: int, area: str,
+    def __init__(self, identity: str, identity_id: int, lab: int, area: str, basic_infect_capacity, avg_infect_capacity,
                  hidden2infect_day, infect2recover_day, vaccation2return_day,
                   move_matrix, lab_postion=None, addition=0, immune=0):
         assert area in ['E', 'W', 'T', 'O', 'M'], "Invalid area: {}".format(area)
@@ -69,8 +70,9 @@ class People():
 
 
         # 传染别人相关
-        self.propagation_capacity = exposure_to_propagation(self.exposure_time)
+        self.basic_capacity = basic_infect_capacity    # 基础传染能力
         self.talktive_capacity = addition   # 话太多 向别人额外的传染能力
+        self.becomeHidden = create_becomeHidden(avg_infect_capacity)  # Normal->Hidden 转移概率函数
         
 
         # 状态/位置信息
@@ -87,7 +89,7 @@ class People():
     def infect(self, other):
         # 传染逻辑: 只有 Infected --> Normal 才传染
         if self.infect_state == 1 and other.infect_state == 0:
-            add = self.propagation_capacity + self.talktive_capacity - other.immune
+            add = self.basic_capacity + self.talktive_capacity - other.immune
             other.exposure_time += add
             other.history['exposure'][self.identity_id] = other.history['exposure'].get(self.identity_id, 0) + add
             other.history['exposure_area'][self.current_area] += add
@@ -102,10 +104,11 @@ class People():
 
 
 class Student(People):
-    def __init__(self, identity_id: int, lab: int, area: str,
+    def __init__(self, identity_id: int, lab: int, area: str, basic_infect_capacity, avg_infect_capacity,
                  hidden2infect_day, infect2recover_day, vaccation2return_day,
                  move_matrix, lab_postion=None, addition=0, immune=0):
-        super().__init__('student', identity_id, lab, area, hidden2infect_day, infect2recover_day, vaccation2return_day, move_matrix,
+        super().__init__('student', identity_id, lab, area, basic_infect_capacity, avg_infect_capacity,
+                         hidden2infect_day, infect2recover_day, vaccation2return_day, move_matrix,
                          lab_postion=lab_postion,
                          addition=addition,
                          immune=immune)
@@ -116,7 +119,7 @@ class Student(People):
         # 更新感染状态 ------------
         phase = INFECTION_STATE_NAME[self.infect_state]
         if phase == 'Normal':      # 变成潜伏期每个周期检查, 按照一个基于暴露时间的概率变成潜伏期
-            self.infect_state = 2 if becomeHidden(self.exposure_time) else 0
+            self.infect_state = 2 if self.becomeHidden(self.exposure_time, ) else 0
         elif (clock / 60) % 10 == 0:    # 其他状态的转换每天检查
             if phase == 'Infected':
                 self.infect2recover_day -=1
@@ -164,10 +167,11 @@ class Student(People):
 
 
 class Teacher(People):
-    def __init__(self, identity_id: int, lab: int, area: str,
+    def __init__(self, identity_id: int, lab: int, area: str, basic_infect_capacity, avg_infect_capacity,
                  hidden2infect_day, infect2recover_day, vaccation2return_day,
                  move_matrix, lab_postion=None, addition=0, immune=0):
-        super().__init__('teacher', identity_id, lab, area, hidden2infect_day, infect2recover_day, vaccation2return_day, move_matrix,
+        super().__init__('teacher', identity_id, lab, area, basic_infect_capacity, avg_infect_capacity,
+                         hidden2infect_day, infect2recover_day, vaccation2return_day, move_matrix,
                          lab_postion=lab_postion,
                          addition=addition,
                          immune=immune)
@@ -179,7 +183,7 @@ class Teacher(People):
         # 更新感染状态 ------------
         phase = INFECTION_STATE_NAME[self.infect_state]
         if phase == 'Normal':      # 变成潜伏期每个周期检查, 按照一个基于暴露时间的概率变成潜伏期    
-            self.infect_state = 2 if becomeHidden(self.exposure_time) else 0
+            self.infect_state = 2 if self.becomeHidden(self.exposure_time) else 0
         elif (clock / 60) % 10 == 0:    # 其他状态的转换每天检查
             if phase == 'Infected':
                 self.infect2recover_day -= 1
