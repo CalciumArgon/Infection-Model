@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 from config import cfg
 from objects import *
@@ -14,6 +15,18 @@ class Simulation():
         # 时钟信息 -------------------------------------
         self.clock = 0  # 按分钟计, 但可以每次+60模拟小时
         # --------------------------------------------
+        # 收集信息 -------------------------------------
+        self.record = [
+            [[] for _ in range(cfg.environment.lab_number)],    # Normal
+            [[] for _ in range(cfg.environment.lab_number)],    # Infected
+            [[] for _ in range(cfg.environment.lab_number)],    # Hidden
+            [[] for _ in range(cfg.environment.lab_number)],    # Vacation
+            [[] for _ in range(cfg.environment.lab_number)],    # Recovered
+        ]
+        self.normal2hidden_area = [0, 0, 0, 0, 0]   # 分别对应发生在 E W T O M 区域的次数
+        self.hidden2infect_area = [0, 0, 0, 0, 0]
+        # --------------------------------------------
+
 
         # 记录所有人
         self.students = []
@@ -98,11 +111,38 @@ class Simulation():
             for s in init_infect_stu:
                 s.infect_state = 1
                 s.history['exposure']['init'] = True
+                s.history['state_change_area'][0] = s.current_area
+                s.history['state_change_area'][1] = s.current_area
             this_lab_teacher = [t for t in self.teachers if t.lab == lab]
             init_infect_tea = np.random.choice(this_lab_teacher, self.tea_init_infect, replace=False)
             for t in init_infect_tea:
                 t.infect_state = 1
                 t.history['exposure']['init'] = True
+                t.history['state_change_area'][0] = t.current_area
+                t.history['state_change_area'][1] = t.current_area
+
+    def collect_infomation(self):
+        # 1. 各种状态的人数 -- 每天收集
+        if (self.clock // 60) % 10 == 0:
+            for lab in range(self.lab_num):
+                infected = len([s for s in self.students if s.lab == lab and s.infect_state == 1]) + \
+                            len([t for t in self.teachers if t.lab == lab and t.infect_state == 1])
+                hidden = len([s for s in self.students if s.lab == lab and s.infect_state == 2]) + \
+                            len([t for t in self.teachers if t.lab == lab and t.infect_state == 2])
+                vacation = len([s for s in self.students if s.lab == lab and s.infect_state == 3]) + \
+                            len([t for t in self.teachers if t.lab == lab and t.infect_state == 3])
+                recovered = len([s for s in self.students if s.lab == lab and s.infect_state == 4]) + \
+                            len([t for t in self.teachers if t.lab == lab and t.infect_state == 4])
+                self.record[0][lab].append((self.stu_num+self.tea_num) - (infected+hidden+vacation+recovered))
+                self.record[1][lab].append(infected)
+                self.record[2][lab].append(hidden)
+                self.record[3][lab].append(vacation)
+                self.record[4][lab].append(recovered)
+        
+        # 2. Normal->Hidden 和 Hidden->Infect 分别在哪个区域增加的最多 -- 只用收集一次
+        # 在 display 中再收集
+        
+
                 
     def action(self):
         # 每个状态先相互传染
@@ -142,6 +182,7 @@ class Simulation():
                     t.move(self.lab_size)
         
         self.clock += 10
+        self.collect_infomation()
         return
 
     @staticmethod
@@ -164,7 +205,7 @@ class Simulation():
         return (stu_distribution, tea_distribution)
 
 
-    def __str__(self):
+    def print_simulation(self):
         print('=============== Simulation ===============')
         print('[Config]')
         print('Lab number: {}'.format(self.config.environment.lab_number))
@@ -187,7 +228,9 @@ class Simulation():
             if infected_stu == 0 and infected_tea == 0:
                 does_all_recover[lab] = True
         if all(does_all_recover):
-            assert False, 'All people in all labs are recovered!'
+           print('\n【All people in all labs are recovered!】\n')
+           return True
+           
         print('People postions:')
         stu_dis, tea_dis = self.posi_distribution(self)
         print('(corresponding [E W T O M])')
@@ -196,12 +239,57 @@ class Simulation():
             print('    Student:', stu_dis[lab])
             print('    Teacher:', tea_dis[lab])
         print('==========================================')
-        return ''
+        return False
     
     
-    def infection_situation(self):
-        # 返回一些更具体的信息, 比如暴露时间分布, 状态分布
-        students_situation = []
+    def display(self):
+        # 2. Normal->Hidden 和 Hidden->Infect 分别在哪个区域增加的最多 -- 只用收集一次
+        for s in self.students:
+            if s.history['state_change_area'][0] != -1:
+                self.normal2hidden_area[s.history['state_change_area'][0]] += 1
+            if s.history['state_change_area'][1] != -1:
+                self.hidden2infect_area[s.history['state_change_area'][1]] += 1
+        for t in self.teachers:
+            if t.history['state_change_area'][0] != -1:
+                self.normal2hidden_area[t.history['state_change_area'][0]] += 1
+            if t.history['state_change_area'][1] != -1:
+                self.hidden2infect_area[t.history['state_change_area'][1]] += 1
+            
+        fig, axs = plt.subplots(2)
+        axs[0].bar(['E', 'W', 'T', 'O', 'M'], self.normal2hidden_area, color='green')
+        axs[0].grid(axis='y', alpha=0.75)
+        axs[0].set_xlabel('Area')
+        axs[0].set_ylabel('People Number')
+        axs[0].set_title('Normal-->Hidden Area Distribution')
+
+        # Plot the second histogram
+        axs[1].bar(['E', 'W', 'T', 'O', 'M'], self.hidden2infect_area, color='blue')
+        axs[1].grid(axis='y', alpha=0.75)
+        axs[1].set_xlabel('Area')
+        axs[1].set_ylabel('People Number')
+        axs[1].set_title('Hidden-->Infect Area Distribution')
+
+        plt.tight_layout()
+        plt.savefig('./results/变成hidden或infected的位置.png')
+        # plt.show()
+
+
+        # 各个实验室, 五种状态, 人数趋势
+        fig, axs = plt.subplots(self.lab_num)
+        colors = ['green', 'red', 'orange', 'black', 'blue']    # 对应状态 Normal, Infected, Hidden, Vacation, Recovered
+        state_names = ['Normal', 'Infected', 'Hidden', 'Vacation', 'Recovered']
+        # Loop over each lab
+        for i in range(self.lab_num):
+            for j in range(5):
+                axs[i].plot(self.record[j][i], color=colors[j], label=state_names[j])
+            axs[i].set_title('Lab ' + str(i+1))
+            axs[i].set_xlabel('Time')
+            axs[i].set_ylabel('Number of People')
+            axs[i].legend()
+
+        plt.tight_layout()
+        plt.savefig('./results/各实验室人数趋势.png')
+        # plt.show()
 
 
 if __name__ == '__main__':
@@ -211,9 +299,12 @@ if __name__ == '__main__':
 
     simulation = Simulation(cfg)
     
-    for ii in range(3000):
+    for ii in range(1000):
         if ii % 10 == 0:
             print('Round:', ii)
-            print(simulation)
-            
+            finish = simulation.print_simulation()
+            if finish:
+                break
         simulation.action()
+
+    simulation.display()

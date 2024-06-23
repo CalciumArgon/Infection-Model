@@ -83,7 +83,8 @@ class People():
         self.history = {
             'trajectory': [self.current_area],   # 记录行动轨迹
             'exposure': {'init': False},     # 记录这个人被另外的人传染了多少暴露时间，如n[6]=1代表6号贡献了1个时间单位，用于统计谁对其他人传染的事件最多
-            'exposure_area':[0, 0, 0, 0, 0], # 记录这个人在某个区域被增加了多少暴露时间，用于统计哪个区域发生的暴露时间增加最多
+            'exposure_area': [0, 0, 0, 0, 0], # 记录这个人在某个区域被增加了多少暴露时间，用于统计哪个区域发生的暴露时间增加最多
+            'state_change_area': [-1, -1]     # 主要记录 normal->hidden 和 hidden->infected 发生的位置
         }
 
     def infect(self, other):
@@ -119,7 +120,9 @@ class Student(People):
         # 更新感染状态 ------------
         phase = INFECTION_STATE_NAME[self.infect_state]
         if phase == 'Normal':      # 变成潜伏期每个周期检查, 按照一个基于暴露时间的概率变成潜伏期
-            self.infect_state = 2 if self.becomeHidden(self.exposure_time, ) else 0
+            if self.becomeHidden(self.exposure_time):
+                self.infect_state = 2
+                self.history['state_change_area'][0] = self.current_area    # 记录在此地转换成 Hidden
         elif (clock / 60) % 10 == 0:    # 其他状态的转换每天检查
             if phase == 'Infected':
                 self.infect2recover_day -=1
@@ -131,6 +134,7 @@ class Student(People):
                 self.hidden2infect_day -= 1
                 if self.hidden2infect_day == 0:
                     self.infect_state = 1
+                    self.history['state_change_area'][1] = self.current_area    # 记录在此地转换成 Infected
             elif phase == 'Vacation':
                 self.vacation2return_day -= 1
                 self.infect2recover_day -= 1
