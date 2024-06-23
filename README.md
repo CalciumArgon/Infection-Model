@@ -26,4 +26,6 @@ python main.py -cfg ./experiments/test.yaml
 2. 上述传染过程，就是增加 `exposure_time`，只能使 `Normal` 变成 `Hidden`。且进入潜伏期后不再接受传染，`exposure_time` 从此置 `-1` 表示曾经历过 `Hidden` ？
 3. 上述 `Normal --> Hidden` 的过程是一个随机事件，概率随着暴露时间的增加而增加，`p = probability(exposure_time)`。具体函数关系可被设定（可选范围有：XXX），默认为 Logistics
 4. `Hidden` 状态的人在 `hidden2infect_day` 后自动变为 `Infected`，具体时间随不同人体质不同而随机，但总的范围可被设定，老师和学生都默认 3~7 天
-5. 
+
+### TODO
+1. `Student.state_duration` 是记录当前状态的持续时间吗? 是做什么的

@@ -26,52 +26,102 @@ class Simulation():
         self.stu_num = cfg.student.e_number + cfg.student.w_number
         self.tea_num = cfg.teacher.number
 
+        # 学生性质
+        self.talktive_rate = cfg.student.talktive_rate
+        self.immune_rate = cfg.student.immune_rate
+
+        # 老师性质
+        self.tea_talktive_rate = cfg.teacher.talktive_rate
+        self.tea_immune_rate = cfg.teacher.immune_rate
+
+        # 实验室信息
         self.lab_num = cfg.environment.lab_number
         self.lab_size = (cfg.environment.lab_length, cfg.environment.lab_width)
+
+        # 事件信息 -- 各个实验室分开
+        self.meeting_rate = cfg.event.meeting_rate
+        self.meeting_scale = cfg.event.meeting_scale
+        self.meeting_duration = cfg.event.meeting_duration
+        assert len(self.meeting_rate) == len(self.meeting_scale) == len(self.meeting_duration) == self.lab_num, "Meeting config length has to be same as lab-number"
+
+
         for lab in range(self.lab_num):
             # 对于每个lab的学生, 全局标识号的前部分为初始在实验室的, 后部分为初始在工作区的
             for i in range(cfg.student.e_number):
                 # 添加实验室学生, 坐标随机, 全局标识号为: lab * stu_num + i
+                is_talktive = np.random.choice([cfg.student.talktive_addition, 0], p=[self.talktive_rate, 1-self.talktive_rate])
+                is_immune = np.random.choice([cfg.student.immune_defence, 0], p=[self.immune_rate, 1-self.immune_rate])
                 self.students.append(Student(
                                             lab * self.stu_num + i, 
-                                            lab, 'E', cfg.student.hidden2infect_day,
+                                            lab, 'E',
+                                            cfg.student.hidden2infect_day, cfg.student.infect2recover_day, cfg.student.vacation2return_day,
                                             cfg.student.move_matrix,
                                             # 如果整点随机改为 np.random.randint
-                                            lab_postion=(np.random.uniform(0,self.lab_size[0]), np.random.uniform(0, self.lab_size[1]))
+                                            lab_postion=(np.random.uniform(0,self.lab_size[0]), np.random.uniform(0, self.lab_size[1])),
+                                            addition=is_talktive, immune=is_immune
                                         )
                                     )
             for i in range(cfg.student.w_number):
                 # 添加工作区学生, 工位号固定为其全局标识号: lab * stu_num + e_number + i
+                is_talktive = np.random.choice([cfg.student.talktive_addition, 0], p=[self.talktive_rate, 1-self.talktive_rate])
+                is_immune = np.random.choice([cfg.student.immune_defence, 0], p=[self.immune_rate, 1-self.immune_rate])
                 self.students.append(Student(lab * self.stu_num + cfg.student.e_number + i,
-                                             lab, 'W', cfg.student.hidden2infect_day, cfg.student.move_matrix
+                                             lab, 'W',
+                                             cfg.student.hidden2infect_day, cfg.student.infect2recover_day, cfg.student.vacation2return_day,
+                                             cfg.student.move_matrix,
+                                             addition=is_talktive, immune=is_immune
                                         )
                                     )
                 
         for lab in range(cfg.environment.lab_number):
             for i in range(cfg.teacher.number):
-                # 老师初始都在 Office, 全局标识符: lab * cfg.teacher.number + i
+                # 老师初始都在 Office, 全局标识符: 学生总数 + lab * cfg.teacher.number + i
+                is_talktive = np.random.choice([cfg.teacher.talktive_addition, 0], p=[self.tea_talktive_rate, 1-self.tea_talktive_rate])
+                is_immune = np.random.choice([cfg.teacher.immune_defence, 0], p=[self.tea_immune_rate, 1-self.tea_immune_rate])
                 self.teachers.append(Teacher(lab * cfg.teacher.number + i,
-                                              lab, 'O', cfg.teacher.hidden2infect_day, cfg.teacher.move_matrix
+                                              lab, 'O', 
+                                              cfg.teacher.hidden2infect_day, cfg.teacher.infect2recover_day, cfg.teacher.vacation2return_day,
+                                              cfg.teacher.move_matrix,
+                                              addition=is_talktive, immune=is_immune
                                         )
                                     )
                 
     def action(self):
+        # 每个状态先相互传染
         for p in (self.students + self.teachers):
-            for other_p in self.students:
-                if other_p == p:  # 重载了 ==, 比较 identity_id
+            for other_p in (self.students + self.teachers):
+                if other_p == p:  # 重载了 ==, 比较 identity 和 identity_id
                     continue    # 不考虑自己
                 if (p.current_area == other_p.current_area):
-                    # 在同一区域传染; 若在实验室还需小于传染半径; 若在工位认为1m间隔, 半径内传染
-                    if (p.current_area != 0) or (p.current_area == 0 and dist(p, other_p) <= self.virus.infect_radius):
+                    # 在同一区域传染; 若在实验室还需小于传染半径; 若在工位认为工号在其正负4的人传染(可能跨Lab)
+                    if (p.current_area not in [0,1]) \
+                            or (p.current_area == 0 and dist(p, other_p) <= self.virus.infect_radius) \
+                            or (p.current_area == 1 and abs(p.identity_id - other_p.identity_id) <= 4):
                         p.infect(other_p)
 
-        # 最后所有人移动
-        for s in self.students:
-            s.update(self.clock)
-            s.move(self.lab_size)
-        for t in self.teachers:
-            t.update(self.clock)
-            t.move(self.lab_size)
+        # 每个实验室按照自己的概率决定开会
+        for lab in range(self.lab_num):
+            if np.random.rand() < self.meeting_rate[lab]:   # 该实验室决定开会
+                this_lab_student = [s for s in self.students if s.lab == lab]
+                unlucky = np.random.choice(this_lab_student,
+                                           int(self.meeting_rate[lab] * self.stu_num), replace=False)
+                lucky = [x for x in self.students if x not in unlucky]
+                for s in unlucky:     # 学生按比例参会
+                    s.update(self.clock)
+                    s.move(self.lab_size, call_to_meeting=self.meeting_duration[lab])
+                for s in lucky:     # 不参会的学生
+                    s.update(self.clock)
+                    s.move(self.lab_size)
+                this_lab_teacher = [t for t in self.teachers if t.lab == lab]
+                unlucky_tea = np.random.choice(this_lab_teacher,
+                                               int(self.meeting_rate[lab] * self.tea_num), replace=False)
+                lucky_tea = [x for x in self.teachers if x not in unlucky_tea]
+                for t in unlucky_tea:     # 老师按比例参会
+                    t.update(self.clock)
+                    t.move(self.lab_size, call_to_meeting=self.meeting_duration[lab])
+                for t in lucky_tea:     # 不参会的老师
+                    t.update(self.clock)
+                    t.move(self.lab_size)
         
         self.clock += 10
         return
@@ -131,7 +181,7 @@ if __name__ == '__main__':
     print_easydict(cfg)
     simulation = Simulation(cfg)
     
-    for ii in range(20):
+    for ii in range(30):
         if ii % 5 == 0:
             print(simulation)
         simulation.action()
