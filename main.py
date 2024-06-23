@@ -29,10 +29,12 @@ class Simulation():
         # 学生性质
         self.talktive_rate = cfg.student.talktive_rate
         self.immune_rate = cfg.student.immune_rate
+        self.stu_init_infect = cfg.student.init_infect
 
         # 老师性质
         self.tea_talktive_rate = cfg.teacher.talktive_rate
         self.tea_immune_rate = cfg.teacher.immune_rate
+        self.tea_init_infect = cfg.teacher.init_infect
 
         # 实验室信息
         self.lab_num = cfg.environment.lab_number
@@ -85,6 +87,19 @@ class Simulation():
                                               addition=is_talktive, immune=is_immune
                                         )
                                     )
+                
+        # 设置初始感染者
+        for lab in range(self.lab_num):
+            this_lab_student = [s for s in self.students if s.lab == lab]
+            init_infect_stu = np.random.choice(this_lab_student, self.stu_init_infect[lab], replace=False)
+            for s in init_infect_stu:
+                s.infect_state = 1
+                s.history['exposure']['init'] = True
+            this_lab_teacher = [t for t in self.teachers if t.lab == lab]
+            init_infect_tea = np.random.choice(this_lab_teacher, self.tea_init_infect, replace=False)
+            for t in init_infect_tea:
+                t.infect_state = 1
+                t.history['exposure']['init'] = True
                 
     def action(self):
         # 每个状态先相互传染

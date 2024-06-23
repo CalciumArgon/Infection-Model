@@ -18,7 +18,8 @@ __C.virus.infect_radius = 2.0   # 传染半径
 # 学生 -----------------------------------------------------
 __C.student.e_number = 10        # 在 experimental area 学生数量
 __C.student.w_number = 20        # 在 work area 学生数量
-__C.student.move_matrix = [[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2]]    # 学生移动矩阵
+__C.student.init_infect = [1, 2, 4]        # 初始感染人数
+__C.student.move_matrix = [ [0.847,0.1,0.05,0.003,0],[0.1,0.847,0.05,0.003,0],[0.6,0.4,0,0,0],[0.24,0.16,0,0.6,0],[0.6,0.4,0,0,0]]    # 学生移动矩阵
 __C.student.hidden2infect_day = (2, 4)      # 从 hidden 到 infected 天数范围
 __C.student.infect2recover_day = (7, 14)    # 从 infected 到 recovered 天数范围
 __C.student.vacation2return_day = (1, 2)    # 从 vacation 到 回实验室天数范围
@@ -31,7 +32,8 @@ __C.student.immune_defence = 20    # 防御能力值
 
 # 教师 --------------------------------------------------------
 __C.teacher.number = 1        # 教师数量, 初始默认在 office
-__C.teacher.move_matrix = [[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2],[.2,.2,.2,.2,.2]]    # 教师移动矩阵
+__C.teacher.init_infect = [0, 0, 0]        # 初始感染人数
+__C.teacher.move_matrix = [[0,0,0,1,0],[0,0,0,1,0],[0,0,0,1,0],[0.1,0.1,0.05,0.75,0],[0,0,0,1,0]]    # 教师移动矩阵
 __C.teacher.hidden2infect_day = (2, 4)      # 从 hidden 到 infected 天数范围
 __C.teacher.infect2recover_day = (7, 14)    # 从 infected 到 recovered 天数范围
 __C.teacher.vacation2return_day = (1, 3)    # 从 vacation 到 回实验室天数范围

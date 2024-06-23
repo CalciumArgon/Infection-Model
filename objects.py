@@ -37,7 +37,10 @@ def exposure_to_propagation(time):
     return time
 
 def becomeHidden(time):
-    pro = 1 / (1 + np.exp(-time))
+    # TODO ================================
+    # 这个函数发展太陡峭, 概率集中在 0 或者 1附近
+    # =====================================
+    pro = 1 / (1 + np.exp(-time+60))
     return np.random.choice([True, False], p=[pro, 1-pro])
 
 
@@ -76,9 +79,9 @@ class People():
         self.meeting_state = 0
 
         self.history = {
-            'trajectory': [],   # 记录行动轨迹
-            'exposure': {},     # 记录这个人被另外的人传染了多少暴露时间，如n[6]=1代表6号贡献了1个时间单位，用于统计谁对其他人传染的事件最多
-            'exposure_area':[], # 记录这个人在某个区域被增加了多少暴露时间，用于统计哪个区域发生的暴露时间增加最多
+            'trajectory': [self.current_area],   # 记录行动轨迹
+            'exposure': {'init': False},     # 记录这个人被另外的人传染了多少暴露时间，如n[6]=1代表6号贡献了1个时间单位，用于统计谁对其他人传染的事件最多
+            'exposure_area':[0, 0, 0, 0, 0], # 记录这个人在某个区域被增加了多少暴露时间，用于统计哪个区域发生的暴露时间增加最多
         }
 
     def infect(self, other):
@@ -87,7 +90,7 @@ class People():
             add = self.propagation_capacity + self.talktive_capacity - other.immune
             other.exposure_time += add
             other.history['exposure'][self.identity_id] = other.history['exposure'].get(self.identity_id, 0) + add
-            other.history['exposure_area'].append(self.current_area)
+            other.history['exposure_area'][self.current_area] += add
 
         
     def __str__(self):
