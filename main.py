@@ -52,6 +52,7 @@ class Simulation():
         self.record_area_people = [     # 全局各状态人数 (分lab记录)
             [[] for _ in range(cfg.environment.lab_number)] for _ in range(5)   # Normal Infected Hidden Vacation Recovered
         ]
+        self.infect_num = []    # 专门记录Infected人数随时间变化, 里面是点对 (clock, infected_num)
         self.normal2hidden_area = [0, 0, 0, 0, 0]   # 分别对应发生在 E W T O M 区域的次数
         self.hidden2infect_area = [0, 0, 0, 0, 0]
         self.record_infection_contribution = [
@@ -131,6 +132,7 @@ class Simulation():
     def collect_infomation(self):
         # 1. 各种状态的人数 -- 每天收集
         if (self.clock % 60 == 0) and (self.clock // 60) % 10 == 0:
+            total_infected = 0
             for lab in range(self.lab_num):
                 # "感染人数" 定义为 infected + 在休假但是还没恢复的人数
                 normal = len([s for s in self.students if s.lab == lab and s.infect_state == 0])
@@ -147,6 +149,9 @@ class Simulation():
                 self.record_area_people[2][lab].append(hidden)
                 self.record_area_people[3][lab].append(vacation)
                 self.record_area_people[4][lab].append(recovered)
+                total_infected += infected
+            self.infect_num.append((self.clock, infected))
+                
         
         # 2. Normal->Hidden 和 Hidden->Infect 分别在哪个区域增加的最多 -- 只用收集一次
         # 在 display 中再收集
@@ -408,6 +413,12 @@ class Simulation():
         plt.savefig('./results/感染者人数地图.png')
         # plt.show()
 
+
+        # 7. 绘制感染人数随时间变化; 找 breakout point
+        fig, axs = draw_infected_curve(self.infect_num)
+        print(self.infect_num)
+        plt.tight_layout()
+        plt.savefig('./results/breakout-point.png')
 
 
 
