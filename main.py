@@ -62,6 +62,7 @@ class Simulation():
         ]
         # 第0维表示各实验室, 第1维表示5个状态, 第2维表示5个区域
         self.state_per_area = []    # 内容元素为 np.zeros((self.lab_num, 5, 5), dtype=int)    # 每个实验室, 每个状态, 在每个区域的人数
+        self.infect_people_count = []   # 内容元素为 [0 for _ in range(6)] # E W T O M Vacation 记录当前每个区域的感染人数(不含度假且infected, 度假额外算在最后一个值里)
         # --------------------------------------------
 
 
@@ -129,9 +130,10 @@ class Simulation():
 
     def collect_infomation(self):
         # 1. 各种状态的人数 -- 每天收集
-        if (self.clock // 60) % 10 == 0:
+        if (self.clock % 60 == 0) and (self.clock // 60) % 10 == 0:
             for lab in range(self.lab_num):
                 # "感染人数" 定义为 infected + 在休假但是还没恢复的人数
+                normal = len([s for s in self.students if s.lab == lab and s.infect_state == 0])
                 infected = len([s for s in self.students if s.lab == lab and (s.infect_state == 1 or (s.infect_state == 3 and s.infect2recover_day > 0))]) + \
                             len([t for t in self.teachers if t.lab == lab and t.infect_state == 1])
                 hidden = len([s for s in self.students if s.lab == lab and s.infect_state == 2]) + \
@@ -140,7 +142,7 @@ class Simulation():
                             len([t for t in self.teachers if t.lab == lab and t.infect_state == 3])
                 recovered = len([s for s in self.students if s.lab == lab and s.infect_state == 4]) + \
                             len([t for t in self.teachers if t.lab == lab and t.infect_state == 4])
-                self.record_area_people[0][lab].append((self.stu_num+self.tea_num) - (infected+hidden+vacation+recovered))
+                self.record_area_people[0][lab].append(normal)
                 self.record_area_people[1][lab].append(infected)
                 self.record_area_people[2][lab].append(hidden)
                 self.record_area_people[3][lab].append(vacation)
@@ -156,13 +158,22 @@ class Simulation():
         # 在 display 中再收集
                 
         # 5. State Per Area 每个实验室, 每个状态, 在每个区域的人数 -- 每10天收集一次
-        if (self.clock // 60) % 100 == 0:
+        if (self.clock // 600) % 10 == 0:
             ten_day = self.clock // (100 * 60)
             self.state_per_area.append(np.zeros((self.lab_num, 5, 5), dtype=int))
             for lab in range(self.lab_num):
                 for p in (self.students + self.teachers):
                     if p.lab == lab:
                         self.state_per_area[ten_day][lab][p.infect_state][p.current_area] += 1
+        
+        # 6. Infected Per Area -- 每10天收集一次
+        if (self.clock % 60 == 0) and (self.clock // 60) % 100 == 0:
+            self.infect_people_count.append([0 for _ in range(6)])
+            for p in (self.students + self.teachers):
+                if p.infect_state == 1:
+                    self.infect_people_count[-1][p.current_area] += 1
+                elif p.infect_state == 3 and p.infect2recover_day > 0:
+                    self.infect_people_count[-1][5] += 1
         
 
 
@@ -297,7 +308,7 @@ class Simulation():
         axs[1].set_title('Hidden-->Infect Area Distribution')
 
         plt.tight_layout()
-        plt.savefig('./results/area/4/4_1_area.png')
+        plt.savefig('./results/变成hidden或infected的位置.png')
         # plt.show()
 
 
@@ -305,16 +316,20 @@ class Simulation():
         fig, axs = plt.subplots(self.lab_num)
         colors = ['green', 'red', 'orange', 'black', 'blue']    # 对应状态 Normal, Infected, Hidden, Vacation, Recovered
         state_names = ['Normal', 'Infected', 'Hidden', 'Vacation', 'Recovered']
+        lines = []
         for i in range(self.lab_num):
             for j in range(5):
-                axs[i].plot(self.record_area_people[j][i], color=colors[j], label=state_names[j])
+                line, = axs[i].plot(self.record_area_people[j][i], color=colors[j], label=state_names[j])
+                if i == 0:
+                    lines.append(line)
             axs[i].set_title('Lab ' + str(i+1))
             axs[i].set_xlabel('Time')
             axs[i].set_ylabel('Number of People')
-            axs[i].legend()
-
+            # axs[i].legend(labels=[])
+            axs[i].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        # fig.legend(lines, state_names, bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
-        plt.savefig('./results/distribution/4/4_1_distribution.png')
+        plt.savefig('./results/各实验室人数趋势.png')
         # plt.show()
 
 
@@ -384,6 +399,13 @@ class Simulation():
 
         # plt.tight_layout()
         # plt.savefig('./results/每10天实验室各区域饼图.png')
+        # plt.show()
+
+        # 6. 每个区域的 Infected + Vacation中Infected 人数, 地图上越深的区域表示人越多
+        ten_days = self.clock // (100 * 60)
+        fig, axs = draw_rectangles(ten_days, self.infect_people_count)
+        plt.tight_layout()
+        plt.savefig('./results/感染者人数地图.png')
         # plt.show()
 
 
