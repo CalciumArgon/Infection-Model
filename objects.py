@@ -81,19 +81,22 @@ class People():
         self.meeting_state = 0
 
         self.history = {
-            'trajectory': [self.current_area],   # 记录行动轨迹
-            'exposure': {'init': False},     # 记录这个人被另外的人传染了多少暴露时间，如n[6]=1代表6号贡献了1个时间单位，用于统计谁对其他人传染的事件最多
-            'exposure_area': [0, 0, 0, 0, 0], # 记录这个人在某个区域被增加了多少暴露时间，用于统计哪个区域发生的暴露时间增加最多
-            'state_change_area': [-1, -1]     # 主要记录 normal->hidden 和 hidden->infected 发生的位置
+            'trajectory': [self.current_area],  # 记录行动轨迹
+            'exposure': {'init': False},        # 记录这个人被另外的人传染了多少暴露时间，如n[6]=1代表6号贡献了1个时间单位，用于统计谁对其他人传染的事件最多
+            'exposure_area': [0, 0, 0, 0, 0],   # 记录这个人在某个区域被增加了多少暴露时间，用于统计哪个区域发生的暴露时间增加最多
+            'state_change_area': [-1, -1],      # 记录 normal->hidden 和 hidden->infected 发生的位置
+            'infect_area_contribution': [0, 0, 0, 0, 0]      # 记录这个人在每个区域贡献的总传染量 (最终可视化的是sum, 即总贡献了多少传染)
         }
 
     def infect(self, other):
         # 传染逻辑: 只有 Infected --> Normal 才传染
         if self.infect_state == 1 and other.infect_state == 0:
             add = self.basic_capacity + self.talktive_capacity - other.immune
+            assert add > 0, "{}, {}, {}".format(self.basic_capacity, self.talktive_capacity, other.immune)
             other.exposure_time += add
             other.history['exposure'][self.identity_id] = other.history['exposure'].get(self.identity_id, 0) + add
             other.history['exposure_area'][self.current_area] += add
+            self.history['infect_area_contribution'][other.current_area] += add
 
         
     def __str__(self):
