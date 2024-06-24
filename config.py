@@ -42,7 +42,7 @@ __C.teacher.vacation2return_day = (1, 3)    # 从 vacation 到 回实验室天�
 __C.teacher.talktive_rate = 0.8    # e人 / 总人数
 __C.teacher.talktive_addition = 20    # 额外的传染能力值
 __C.teacher.immune_rate = 0.8        # 强免疫 / 总人数
-__C.teacher.immune_defence = 20    # 防御能力值
+__C.teacher.immune_defence = 10    # 防御能力值
 # ------------------------------------------------------------
 
 
