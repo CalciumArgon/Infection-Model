@@ -91,7 +91,10 @@ class People():
     def infect(self, other):
         # 传染逻辑: 只有 Infected --> Normal 才传染
         if self.infect_state == 1 and other.infect_state == 0:
-            add = self.basic_capacity + self.talktive_capacity - other.immune
+            a = 1
+            if self.current_area == 2:
+                a = 0.8
+            add = a * self.basic_capacity + self.talktive_capacity - other.immune
             assert add > 0, "{}, {}, {}".format(self.basic_capacity, self.talktive_capacity, other.immune)
             other.exposure_time += add
             other.history['exposure'][self.identity_id] = other.history['exposure'].get(self.identity_id, 0) + add
