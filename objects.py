@@ -40,14 +40,14 @@ AREA = {
 
 def create_becomeHidden(av):
     def becomeHidden(time):
-        pro = 1 / (1 + np.exp(6 - (time/av)))
+        pro = 1 / (1 + np.exp(6 - (time/500/av)))
         return np.random.choice([True, False], p=[pro, 1-pro])
     return becomeHidden
 
 
 class People():
     def __init__(self, identity: str, identity_id: int, lab: int, area: str, basic_infect_capacity, avg_infect_capacity,
-                 hidden2infect_day, infect2recover_day, vaccation2return_day,
+                 hidden2infect_day, infect2recover_day, vacation2return_day,
                   move_matrix, lab_postion=None, addition=0, immune=0):
         assert area in ['E', 'W', 'T', 'O', 'M'], "Invalid area: {}".format(area)
         assert identity.lower() in ['student', 'teacher'], "Invalid identity: {}".format(identity)
@@ -66,7 +66,7 @@ class People():
         self.state_duration = 0 # Duration of current state
         self.hidden2infect_day = np.random.randint(hidden2infect_day[0], hidden2infect_day[1])      # 在范围内随机
         self.infect2recover_day = np.random.randint(infect2recover_day[0], infect2recover_day[1])
-        self.vacation2return_day = np.random.randint(vaccation2return_day[0], vaccation2return_day[1])
+        self.vacation2return_day = np.random.randint(vacation2return_day[0], vacation2return_day[1])
 
 
         # 传染别人相关
@@ -106,10 +106,10 @@ class People():
 
 class Student(People):
     def __init__(self, identity_id: int, lab: int, area: str, basic_infect_capacity, avg_infect_capacity,
-                 hidden2infect_day, infect2recover_day, vaccation2return_day,
+                 hidden2infect_day, infect2recover_day, vacation2return_day,
                  move_matrix, lab_postion=None, addition=0, immune=0):
         super().__init__('student', identity_id, lab, area, basic_infect_capacity, avg_infect_capacity,
-                         hidden2infect_day, infect2recover_day, vaccation2return_day, move_matrix,
+                         hidden2infect_day, infect2recover_day, vacation2return_day, move_matrix,
                          lab_postion=lab_postion,
                          addition=addition,
                          immune=immune)
@@ -128,7 +128,7 @@ class Student(People):
                 self.infect2recover_day -=1
                 if self.infect2recover_day == 0:
                     self.infect_state = 4
-                elif np.random.rand() < 0.3:    # 若student当天没好, 则 0.3 的概率去休假
+                elif np.random.rand() < 0.3 and self.vacation2return_day != 0:    # 若student当天没好, 则 0.3 的概率去休假
                     self.infect_state = 3
             elif phase == 'Hidden':
                 self.hidden2infect_day -= 1
@@ -172,10 +172,10 @@ class Student(People):
 
 class Teacher(People):
     def __init__(self, identity_id: int, lab: int, area: str, basic_infect_capacity, avg_infect_capacity,
-                 hidden2infect_day, infect2recover_day, vaccation2return_day,
+                 hidden2infect_day, infect2recover_day, vacation2return_day,
                  move_matrix, lab_postion=None, addition=0, immune=0):
         super().__init__('teacher', identity_id, lab, area, basic_infect_capacity, avg_infect_capacity,
-                         hidden2infect_day, infect2recover_day, vaccation2return_day, move_matrix,
+                         hidden2infect_day, infect2recover_day, vacation2return_day, move_matrix,
                          lab_postion=lab_postion,
                          addition=addition,
                          immune=immune)

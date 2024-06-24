@@ -221,11 +221,15 @@ class Simulation():
         does_all_recover = [False for _ in range(self.lab_num)]
         for lab in range(self.lab_num):
             infected_stu = len([s for s in self.students if s.lab == lab and s.infect_state == 1])
+            hidden_stu = len([s for s in self.students if s.lab == lab and s.infect_state == 2])
+            vacation_stu = len([s for s in self.students if s.lab == lab and s.infect_state == 3])
             infected_tea = len([t for t in self.teachers if t.lab == lab and t.infect_state == 1])
+            hidden_tea = len([t for t in self.teachers if t.lab == lab and t.infect_state == 2])
+            vacation_tea = len([t for t in self.teachers if t.lab == lab and t.infect_state == 3])
             print('  Lab {}: student: {} ({}%), teacher: {} ({}%)'.format(lab, infected_stu, round(100*infected_stu / self.stu_num, 2)
                                                                           , infected_tea, round(100*infected_tea / self.tea_num, 2))
             )
-            if infected_stu == 0 and infected_tea == 0:
+            if infected_stu == 0 and infected_tea == 0 and hidden_stu ==0 and vacation_stu==0 and hidden_tea==0 and vacation_tea==0 :
                 does_all_recover[lab] = True
         if all(does_all_recover):
            print('\n【All people in all labs are recovered!】\n')
@@ -270,7 +274,7 @@ class Simulation():
         axs[1].set_title('Hidden-->Infect Area Distribution')
 
         plt.tight_layout()
-        plt.savefig('./results/变成hidden或infected的位置.png')
+        plt.savefig('./results/area/4/4_1_area.png')
         # plt.show()
 
 
@@ -288,7 +292,7 @@ class Simulation():
             axs[i].legend()
 
         plt.tight_layout()
-        plt.savefig('./results/各实验室人数趋势.png')
+        plt.savefig('./results/distribution/4/4_1_distribution.png')
         # plt.show()
 
 
@@ -299,8 +303,8 @@ if __name__ == '__main__':
 
     simulation = Simulation(cfg)
     
-    for ii in range(1000):
-        if ii % 10 == 0:
+    for ii in range(6000):
+        if ii % 100 == 0:
             print('Round:', ii)
             finish = simulation.print_simulation()
             if finish:
