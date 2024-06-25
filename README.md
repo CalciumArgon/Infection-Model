@@ -58,5 +58,4 @@ python main.py -cfg ./experiments/test.yaml
     * 每个实验室随天数的各状态人数变化
     * 各个区域的 `Infected` 人数比例
 
-<img src='./img/trend_each_lab.png' width=53.3%>
-<img src="./img/Infected_people_where.png" width=40%>
+<img src='./img/trend_each_lab.png' width=53.3%><img src="./img/Infected_people_where.png" width=40%>
