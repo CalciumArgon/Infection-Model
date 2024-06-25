@@ -430,7 +430,7 @@ if __name__ == '__main__':
 
     simulation = Simulation(cfg)
     
-    for ii in range(6000):
+    for ii in range(2500):
         if ii % 100 == 0:
             print('Round:', ii)
             finish = simulation.print_simulation()
